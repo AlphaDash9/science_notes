@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Law of Conservation of Mass - Interactive Simulation</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background-color: #0b0f1a;
+      font-family: 'Segoe UI', sans-serif;
+      color: white;
+    }
+
+    .control-panel {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: #11172b;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.6);
+      z-index: 10;
+      max-width: 320px;
+    }
+
+    .slider-container {
+      margin-bottom: 15px;
+    }
+
+    input[type="range"] {
+      width: 220px;
+      accent-color: red;
+    }
+
+    label {
+      font-size: 14px;
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    #info-box {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      max-width: 400px;
+      background-color: #141b2f;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+      z-index: 10;
+    }
+  </style>
+</head>
+<body>
+  <div class="control-panel">
+    <div class="slider-container">
+      <label for="hydrogenSlider">H₂ Moles: <span id="hCount">10</span></label>
+      <input type="range" id="hydrogenSlider" min="0" max="20" value="10">
+    </div>
+    <div class="slider-container">
+      <label for="oxygenSlider">O₂ Moles: <span id="oCount">6</span></label>
+      <input type="range" id="oxygenSlider" min="0" max="10" value="6">
+    </div>
+    <div class="equation" id="equationDisplay" style="margin-top: 20px; font-size: 1.2em;"></div>
+  </div>
+
+  <div id="info-box">
+    <strong>Explanation:</strong> The Law of Conservation of Mass states that mass can neither be created nor destroyed in a chemical reaction. This means that the total mass of the reactants is always equal to the total mass of the products. During a chemical reaction, atoms are simply rearranged to form new substances, but no atoms are lost or gained in the process. As a result, the overall mass remains constant throughout the reaction.
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
+  <script>
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color('#0b0f1a');
+
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 10, 60);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    // Lighting
+    scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
+    dirLight.position.set(10, 20, 10);
+    scene.add(dirLight);
+
+    const hColor = 0xffffff;
+    const oColor = 0xff0000;
+
+    const hGeometry = new THREE.SphereGeometry(1, 32, 32);
+    const oGeometry = new THREE.SphereGeometry(1.8, 32, 32);
+    const hMaterial = new THREE.MeshStandardMaterial({ color: hColor });
+    const oMaterial = new THREE.MeshStandardMaterial({ color: oColor });
+    const bondMaterial = new THREE.MeshStandardMaterial({ color: 0xaaaaaa });
+
+    let molecules = [];
+
+    function createH2OMolecule(x, y, z) {
+      let group = new THREE.Group();
+
+      let o = new THREE.Mesh(oGeometry, oMaterial);
+      o.position.set(0, 0, 0);
+
+      let h1 = new THREE.Mesh(hGeometry, hMaterial);
+      h1.position.set(-2.5, 2, 0);
+
+      let h2 = new THREE.Mesh(hGeometry, hMaterial);
+      h2.position.set(2.5, 2, 0);
+
+      let bond1 = createBond(o.position, h1.position);
+      let bond2 = createBond(o.position, h2.position);
+
+      group.add(o, h1, h2, bond1, bond2);
+      group.position.set(x, y, z);
+      group.userData = {
+        floatOffset: Math.random() * Math.PI * 2,
+        baseY: y
+      };
+
+      return group;
+    }
+
+    function createBond(start, end) {
+      const dir = new THREE.Vector3().subVectors(end, start);
+      const length = dir.length();
+      const bondGeom = new THREE.CylinderGeometry(0.3, 0.3, length, 16);
+      const bond = new THREE.Mesh(bondGeom, bondMaterial);
+
+      const midPoint = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
+      bond.position.copy(midPoint);
+
+      bond.lookAt(end);
+      bond.rotateX(Math.PI / 2);
+      return bond;
+    }
+
+    function createAtom(type, x, y, z) {
+      let mesh;
+      if (type === 'H') mesh = new THREE.Mesh(hGeometry, hMaterial);
+      else if (type === 'O') mesh = new THREE.Mesh(oGeometry, oMaterial);
+      mesh.position.set(x, y, z);
+      mesh.userData = {
+        floatOffset: Math.random() * Math.PI * 2,
+        baseY: y
+      };
+      return mesh;
+    }
+
+    function updateMolecules(hCount, oCount) {
+      molecules.forEach(m => scene.remove(m));
+      molecules = [];
+
+      const maxMolecules = Math.min(Math.floor(hCount / 2), oCount);
+      const remainingH = hCount - maxMolecules * 2;
+      const remainingO = oCount - maxMolecules;
+
+      for (let i = 0; i < maxMolecules; i++) {
+        const mol = createH2OMolecule((i - maxMolecules / 2) * 12, 0, 0);
+        scene.add(mol);
+        molecules.push(mol);
+      }
+
+      for (let i = 0; i < remainingH; i++) {
+        const h = createAtom('H', (i - remainingH / 2) * 4, 4, -8);
+        scene.add(h);
+        molecules.push(h);
+      }
+
+      for (let i = 0; i < remainingO; i++) {
+        const o = createAtom('O', (i - remainingO / 2) * 5, -4, 8);
+        scene.add(o);
+        molecules.push(o);
+      }
+
+      updateEquationDisplay(hCount, oCount, maxMolecules);
+    }
+
+    function updateEquationDisplay(h2, o2, productCount) {
+      document.getElementById('equationDisplay').textContent = `${h2}H₂ + ${o2}O₂ → ${productCount * 2}H₂O`;
+    }
+
+    const hSlider = document.getElementById('hydrogenSlider');
+    const oSlider = document.getElementById('oxygenSlider');
+    const hCountLabel = document.getElementById('hCount');
+    const oCountLabel = document.getElementById('oCount');
+
+    function onSliderChange() {
+      const hCount = parseInt(hSlider.value);
+      const oCount = parseInt(oSlider.value);
+      hCountLabel.textContent = hCount;
+      oCountLabel.textContent = oCount;
+      updateMolecules(hCount, oCount);
+    }
+
+    hSlider.addEventListener('input', onSliderChange);
+    oSlider.addEventListener('input', onSliderChange);
+
+    updateMolecules(parseInt(hSlider.value), parseInt(oSlider.value));
+
+    const clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const time = clock.getElapsedTime();
+      for (let obj of molecules) {
+        if (obj.userData) {
+          const offset = obj.userData.floatOffset;
+          const baseY = obj.userData.baseY;
+          obj.position.y = baseY + Math.sin(time + offset) * 0.5;
+          obj.rotation.y += 0.004;
+        }
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    animate();
+  </script>
+  <hr><hr>
+</body>
+</html>
