@@ -1,0 +1,2048 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Interactive Periodic Table with element details and 3D models"
+    />
+    <meta
+      name="keywords"
+      content="periodic table, chemistry, elements, 3D models"
+    />
+    <meta name="author" content="GenZai" />
+    <title>Interactive Periodic Table</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+        background-color: #f3f4f6;
+        color: #1f2937;
+        line-height: 1.5;
+      }
+
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 2rem;
+      }
+
+      h1 {
+        text-align: center;
+        font-size: 2.5rem;
+        margin-bottom: 2rem;
+        color: #1e3a8a;
+      }
+
+      h2 {
+        text-align: center;
+        margin-bottom: 2rem;
+        color: #1e3a8a;
+      }
+
+      .periodic-table {
+        display: grid;
+        grid-template-columns: repeat(18, 1fr);
+        gap: 4px;
+        background-color: #f3f4f6;
+        padding: 1rem;
+        border-radius: 12px;
+      }
+
+      .element {
+        aspect-ratio: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        font-size: 0.9rem;
+        font-weight: 500;
+        text-align: center;
+      }
+
+      .element:hover {
+        transform: scale(1.1);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      }
+
+      .alkali-metal {
+        background-color: #b91c1c;
+        color: #fff;
+      }
+      .alkaline-earth-metal {
+        background-color: #dc2626;
+        color: #fff;
+      }
+      .transition-metal {
+        background-color: #f59e0b;
+        color: #fff;
+      }
+      .lanthanide {
+        background-color: #d97706;
+        color: #fff;
+      }
+      .actinide {
+        background-color: #b45309;
+        color: #fff;
+      }
+      .post-transition-metal {
+        background-color: #10b981;
+        color: #fff;
+      }
+      .metalloid {
+        background-color: #059669;
+        color: #fff;
+      }
+      .nonmetal {
+        background-color: #15803d;
+        color: #fff;
+      }
+      .noble-gas {
+        background-color: #1e3a8a;
+        color: #fff;
+      }
+      .unknown {
+        background-color: #6b7280;
+        color: #fff;
+      }
+
+      .element span {
+        display: block;
+      }
+
+      .element .symbol {
+        font-size: 1.2rem;
+        font-weight: 700;
+      }
+
+      .element .name {
+        font-size: 0.7rem;
+      }
+
+      .side-panel {
+        position: fixed;
+        top: 0;
+        right: -400px;
+        width: 400px;
+        height: 100%;
+        background-color: #ffffff;
+        box-shadow: -4px 0 12px rgba(0, 0, 0, 0.1);
+        transition: right 0.3s ease;
+        padding: 2rem;
+        overflow-y: auto;
+        z-index: 1000;
+      }
+
+      .side-panel.active {
+        right: 0;
+      }
+
+      .close-btn {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: #1f2937;
+      }
+
+      .element-details {
+        margin-top: 2rem;
+      }
+
+      .element-details h2 {
+        font-size: 2rem;
+        color: #1e3a8a;
+        margin-bottom: 1rem;
+      }
+
+      .element-details p {
+        margin-bottom: 0.8rem;
+        font-size: 1rem;
+      }
+
+      .model-container {
+        width: 100%;
+        height: 300px;
+        margin-top: 2rem;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      @media (max-width: 768px) {
+        .periodic-table {
+          grid-template-columns: repeat(9, 1fr);
+        }
+
+        .side-panel {
+          width: 100%;
+          right: -100%;
+        }
+
+        .container {
+          padding: 1rem;
+        }
+
+        h1 {
+          font-size: 1.8rem;
+        }
+
+        .element {
+          font-size: 0.8rem;
+        }
+
+        .element .symbol {
+          font-size: 1rem;
+        }
+
+        .element .name {
+          font-size: 0.6rem;
+        }
+      }
+      .card {
+        background: #141b2f;
+        border-radius: 16px;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+        margin-right: 20px;
+        padding: 20px;
+        margin-left: 20px;
+        margin-bottom: 20px;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+      }
+
+      .card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+      }
+
+      .card h3 {
+        margin-top: 0;
+        font-size: 1.5em;
+        color: #00bcd4;
+      }
+
+      .card p {
+        font-size: 0.95em;
+        line-height: 1.5;
+        color: #cdd3e5;
+      }
+
+      .card button {
+        margin-top: 15px;
+        padding: 10px 20px;
+        background: #00bcd4;
+        color: #0b0f1a;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: bold;
+      }
+
+      .card button:hover {
+        background: #00acc1;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Periodic Table</h1>
+      <div class="periodic-table" id="periodic-table">
+        <!-- Elements will be dynamically inserted here by JavaScript -->
+      </div>
+      <div class="side-panel" id="side-panel">
+        <button class="close-btn" id="close-btn">×</button>
+        <div class="element-details" id="element-details">
+          <h2 id="element-name"></h2>
+          <p>
+            <strong>Atomic Number:</strong> <span id="atomic-number"></span>
+          </p>
+          <p><strong>Atomic Mass:</strong> <span id="atomic-mass"></span></p>
+          <p>
+            <strong>Oxidation States:</strong>
+            <span id="oxidation-states"></span>
+          </p>
+          <p>
+            <strong>Electron Configuration:</strong>
+            <span id="electron-config"></span>
+          </p>
+          <p><strong>Group:</strong> <span id="element-group"></span></p>
+          <p><strong>Period:</strong> <span id="element-period"></span></p>
+          <div id="model-container" class="model-container"></div>
+        </div>
+      </div>
+    </div>
+
+    <h1>Law of Chemical Combination</h1>
+
+    <div class="card">
+      <h3>Law of Conservation of Mass</h3>
+      <p>
+        Mass can neither be created nor destroyed in a chemical reaction. The
+        mass of reactants equals the mass of products.
+      </p>
+      <button>Learn More</button>
+    </div>
+
+    <div class="card">
+      <h3>Law of Constant Proportion</h3>
+      <p>
+        Mass can neither be created nor destroyed in a chemical reaction. The
+        mass of reactants equals the mass of products.
+      </p>
+      <button>Learn More</button>
+    </div>
+
+    <script>
+      (function () {
+        const popup = document.createElement("div");
+        popup.innerHTML = "Generated by <strong>GenZai.in</strong>";
+        Object.assign(popup.style, {
+          position: "fixed",
+          bottom: "20px",
+          left: "20px",
+          backgroundColor: "rgba(0, 0, 0, 0.7)",
+          color: "#fff",
+          padding: "8px 12px",
+          borderRadius: "8px",
+          fontSize: "14px",
+          zIndex: "1000",
+          boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
+          opacity: "0",
+          transform: "translateY(10px)",
+          transition: "opacity 0.5s ease, transform 0.5s ease",
+        });
+        document.body.appendChild(popup);
+        requestAnimationFrame(() => {
+          popup.style.opacity = "1";
+          popup.style.transform = "translateY(0)";
+        });
+        setTimeout(() => {
+          popup.style.opacity = "0";
+          popup.style.transform = "translateY(10px)";
+          setTimeout(() => popup.remove(), 500);
+        }, 5000);
+      })();
+    </script>
+    <script>
+      const periodicTable = document.getElementById("periodic-table");
+      const sidePanel = document.getElementById("side-panel");
+      const closeBtn = document.getElementById("close-btn");
+      const elementDetails = {
+        name: document.getElementById("element-name"),
+        atomicNumber: document.getElementById("atomic-number"),
+        atomicMass: document.getElementById("atomic-mass"),
+        oxidationStates: document.getElementById("oxidation-states"),
+        electronConfig: document.getElementById("electron-config"),
+        group: document.getElementById("element-group"),
+        period: document.getElementById("element-period"),
+      };
+      const modelContainer = document.getElementById("model-container");
+
+      const elements = [
+        {
+          symbol: "H",
+          name: "Hydrogen",
+          atomicNumber: 1,
+          atomicMass: 1.008,
+          oxidationStates: "+1, -1",
+          electronConfig: "1s¹",
+          group: "Nonmetal",
+          period: 1,
+          class: "nonmetal",
+          gridColumn: 1,
+          gridRow: 1,
+        },
+        {
+          symbol: "He",
+          name: "Helium",
+          atomicNumber: 2,
+          atomicMass: 4.002,
+          oxidationStates: "0",
+          electronConfig: "1s²",
+          group: "Noble Gas",
+          period: 1,
+          class: "noble-gas",
+          gridColumn: 18,
+          gridRow: 1,
+        },
+        {
+          symbol: "Li",
+          name: "Lithium",
+          atomicNumber: 3,
+          atomicMass: 6.941,
+          oxidationStates: "+1",
+          electronConfig: "[He] 2s¹",
+          group: "Alkali Metal",
+          period: 2,
+          class: "alkali-metal",
+          gridColumn: 1,
+          gridRow: 2,
+        },
+        {
+          symbol: "Be",
+          name: "Beryllium",
+          atomicNumber: 4,
+          atomicMass: 9.012,
+          oxidationStates: "+2",
+          electronConfig: "[He] 2s²",
+          group: "Alkaline Earth Metal",
+          period: 2,
+          class: "alkaline-earth-metal",
+          gridColumn: 2,
+          gridRow: 2,
+        },
+        {
+          symbol: "B",
+          name: "Boron",
+          atomicNumber: 5,
+          atomicMass: 10.811,
+          oxidationStates: "+3",
+          electronConfig: "[He] 2s² 2p¹",
+          group: "Metalloid",
+          period: 2,
+          class: "metalloid",
+          gridColumn: 13,
+          gridRow: 2,
+        },
+        {
+          symbol: "C",
+          name: "Carbon",
+          atomicNumber: 6,
+          atomicMass: 12.011,
+          oxidationStates: "+4, +2, -4",
+          electronConfig: "[He] 2s² 2p²",
+          group: "Nonmetal",
+          period: 2,
+          class: "nonmetal",
+          gridColumn: 14,
+          gridRow: 2,
+        },
+        {
+          symbol: "N",
+          name: "Nitrogen",
+          atomicNumber: 7,
+          atomicMass: 14.007,
+          oxidationStates: "+5, +3, -3",
+          electronConfig: "[He] 2s² 2p³",
+          group: "Nonmetal",
+          period: 2,
+          class: "nonmetal",
+          gridColumn: 15,
+          gridRow: 2,
+        },
+        {
+          symbol: "O",
+          name: "Oxygen",
+          atomicNumber: 8,
+          atomicMass: 15.999,
+          oxidationStates: "-2",
+          electronConfig: "[He] 2s² 2p⁴",
+          group: "Nonmetal",
+          period: 2,
+          class: "nonmetal",
+          gridColumn: 16,
+          gridRow: 2,
+        },
+        {
+          symbol: "F",
+          name: "Fluorine",
+          atomicNumber: 9,
+          atomicMass: 18.998,
+          oxidationStates: "-1",
+          electronConfig: "[He] 2s² 2p⁵",
+          group: "Nonmetal",
+          period: 2,
+          class: "nonmetal",
+          gridColumn: 17,
+          gridRow: 2,
+        },
+        {
+          symbol: "Ne",
+          name: "Neon",
+          atomicNumber: 10,
+          atomicMass: 20.18,
+          oxidationStates: "0",
+          electronConfig: "[He] 2s² 2p⁶",
+          group: "Noble Gas",
+          period: 2,
+          class: "noble-gas",
+          gridColumn: 18,
+          gridRow: 2,
+        },
+        {
+          symbol: "Na",
+          name: "Sodium",
+          atomicNumber: 11,
+          atomicMass: 22.99,
+          oxidationStates: "+1",
+          electronConfig: "[Ne] 3s¹",
+          group: "Alkali Metal",
+          period: 3,
+          class: "alkali-metal",
+          gridColumn: 1,
+          gridRow: 3,
+        },
+        {
+          symbol: "Mg",
+          name: "Magnesium",
+          atomicNumber: 12,
+          atomicMass: 24.305,
+          oxidationStates: "+2",
+          electronConfig: "[Ne] 3s²",
+          group: "Alkaline Earth Metal",
+          period: 3,
+          class: "alkaline-earth-metal",
+          gridColumn: 2,
+          gridRow: 3,
+        },
+        {
+          symbol: "Al",
+          name: "Aluminum",
+          atomicNumber: 13,
+          atomicMass: 26.982,
+          oxidationStates: "+3",
+          electronConfig: "[Ne] 3s² 3p¹",
+          group: "Post-transition Metal",
+          period: 3,
+          class: "post-transition-metal",
+          gridColumn: 13,
+          gridRow: 3,
+        },
+        {
+          symbol: "Si",
+          name: "Silicon",
+          atomicNumber: 14,
+          atomicMass: 28.085,
+          oxidationStates: "+4, -4",
+          electronConfig: "[Ne] 3s² 3p²",
+          group: "Metalloid",
+          period: 3,
+          class: "metalloid",
+          gridColumn: 14,
+          gridRow: 3,
+        },
+        {
+          symbol: "P",
+          name: "Phosphorus",
+          atomicNumber: 15,
+          atomicMass: 30.974,
+          oxidationStates: "+5, +3, -3",
+          electronConfig: "[Ne] 3s² 3p³",
+          group: "Nonmetal",
+          period: 3,
+          class: "nonmetal",
+          gridColumn: 15,
+          gridRow: 3,
+        },
+        {
+          symbol: "S",
+          name: "Sulfur",
+          atomicNumber: 16,
+          atomicMass: 32.06,
+          oxidationStates: "+6, +4, -2",
+          electronConfig: "[Ne] 3s² 3p⁴",
+          group: "Nonmetal",
+          period: 3,
+          class: "nonmetal",
+          gridColumn: 16,
+          gridRow: 3,
+        },
+        {
+          symbol: "Cl",
+          name: "Chlorine",
+          atomicNumber: 17,
+          atomicMass: 35.45,
+          oxidationStates: "+7, +5, +1, -1",
+          electronConfig: "[Ne] 3s² 3p⁵",
+          group: "Nonmetal",
+          period: 3,
+          class: "nonmetal",
+          gridColumn: 17,
+          gridRow: 3,
+        },
+        {
+          symbol: "Ar",
+          name: "Argon",
+          atomicNumber: 18,
+          atomicMass: 39.948,
+          oxidationStates: "0",
+          electronConfig: "[Ne] 3s² 3p⁶",
+          group: "Noble Gas",
+          period: 3,
+          class: "noble-gas",
+          gridColumn: 18,
+          gridRow: 3,
+        },
+        {
+          symbol: "K",
+          name: "Potassium",
+          atomicNumber: 19,
+          atomicMass: 39.098,
+          oxidationStates: "+1",
+          electronConfig: "[Ar] 4s¹",
+          group: "Alkali Metal",
+          period: 4,
+          class: "alkali-metal",
+          gridColumn: 1,
+          gridRow: 4,
+        },
+        {
+          symbol: "Ca",
+          name: "Calcium",
+          atomicNumber: 20,
+          atomicMass: 40.078,
+          oxidationStates: "+2",
+          electronConfig: "[Ar] 4s²",
+          group: "Alkaline Earth Metal",
+          period: 4,
+          class: "alkaline-earth-metal",
+          gridColumn: 2,
+          gridRow: 4,
+        },
+        {
+          symbol: "Sc",
+          name: "Scandium",
+          atomicNumber: 21,
+          atomicMass: 44.956,
+          oxidationStates: "+3",
+          electronConfig: "[Ar] 3d¹ 4s²",
+          group: "Transition Metal",
+          period: 4,
+          class: "transition-metal",
+          gridColumn: 3,
+          gridRow: 4,
+        },
+        {
+          symbol: "Ti",
+          name: "Titanium",
+          atomicNumber: 22,
+          atomicMass: 47.867,
+          oxidationStates: "+4, +3, +2",
+          electronConfig: "[Ar] 3d² 4s²",
+          group: "Transition Metal",
+          period: 4,
+          class: "transition-metal",
+          gridColumn: 4,
+          gridRow: 4,
+        },
+        {
+          symbol: "V",
+          name: "Vanadium",
+          atomicNumber: 23,
+          atomicMass: 50.942,
+          oxidationStates: "+5, +4, +3, +2",
+          electronConfig: "[Ar] 3d³ 4s²",
+          group: "Transition Metal",
+          period: 4,
+          class: "transition-metal",
+          gridColumn: 5,
+          gridRow: 4,
+        },
+        {
+          symbol: "Cr",
+          name: "Chromium",
+          atomicNumber: 24,
+          atomicMass: 51.996,
+          oxidationStates: "+6, +3, +2",
+          electronConfig: "[Ar] 3d⁵ 4s¹",
+          group: "Transition Metal",
+          period: 4,
+          class: "transition-metal",
+          gridColumn: 6,
+          gridRow: 4,
+        },
+        {
+          symbol: "Mn",
+          name: "Manganese",
+          atomicNumber: 25,
+          atomicMass: 54.938,
+          oxidationStates: "+7, +4, +2",
+          electronConfig: "[Ar] 3d⁵ 4s²",
+          group: "Transition Metal",
+          period: 4,
+          class: "transition-metal",
+          gridColumn: 7,
+          gridRow: 4,
+        },
+        {
+          symbol: "Fe",
+          name: "Iron",
+          atomicNumber: 26,
+          atomicMass: 55.845,
+          oxidationStates: "+3, +2",
+          electronConfig: "[Ar] 3d⁶ 4s²",
+          group: "Transition Metal",
+          period: 4,
+          class: "transition-metal",
+          gridColumn: 8,
+          gridRow: 4,
+        },
+        {
+          symbol: "Co",
+          name: "Cobalt",
+          atomicNumber: 27,
+          atomicMass: 58.933,
+          oxidationStates: "+3, +2",
+          electronConfig: "[Ar] 3d⁷ 4s²",
+          group: "Transition Metal",
+          period: 4,
+          class: "transition-metal",
+          gridColumn: 9,
+          gridRow: 4,
+        },
+        {
+          symbol: "Ni",
+          name: "Nickel",
+          atomicNumber: 28,
+          atomicMass: 58.693,
+          oxidationStates: "+2",
+          electronConfig: "[Ar] 3d⁸ 4s²",
+          group: "Transition Metal",
+          period: 4,
+          class: "transition-metal",
+          gridColumn: 10,
+          gridRow: 4,
+        },
+        {
+          symbol: "Cu",
+          name: "Copper",
+          atomicNumber: 29,
+          atomicMass: 63.546,
+          oxidationStates: "+2, +1",
+          electronConfig: "[Ar] 3d¹⁰ 4s¹",
+          group: "Transition Metal",
+          period: 4,
+          class: "transition-metal",
+          gridColumn: 11,
+          gridRow: 4,
+        },
+        {
+          symbol: "Zn",
+          name: "Zinc",
+          atomicNumber: 30,
+          atomicMass: 65.38,
+          oxidationStates: "+2",
+          electronConfig: "[Ar] 3d¹⁰ 4s²",
+          group: "Transition Metal",
+          period: 4,
+          class: "transition-metal",
+          gridColumn: 12,
+          gridRow: 4,
+        },
+        {
+          symbol: "Ga",
+          name: "Gallium",
+          atomicNumber: 31,
+          atomicMass: 69.723,
+          oxidationStates: "+3",
+          electronConfig: "[Ar] 3d¹⁰ 4s² 4p¹",
+          group: "Post-transition Metal",
+          period: 4,
+          class: "post-transition-metal",
+          gridColumn: 13,
+          gridRow: 4,
+        },
+        {
+          symbol: "Ge",
+          name: "Germanium",
+          atomicNumber: 32,
+          atomicMass: 72.63,
+          oxidationStates: "+4, +2",
+          electronConfig: "[Ar] 3d¹⁰ 4s² 4p²",
+          group: "Metalloid",
+          period: 4,
+          class: "metalloid",
+          gridColumn: 14,
+          gridRow: 4,
+        },
+        {
+          symbol: "As",
+          name: "Arsenic",
+          atomicNumber: 33,
+          atomicMass: 74.922,
+          oxidationStates: "+5, +3, -3",
+          electronConfig: "[Ar] 3d¹⁰ 4s² 4p³",
+          group: "Metalloid",
+          period: 4,
+          class: "metalloid",
+          gridColumn: 15,
+          gridRow: 4,
+        },
+        {
+          symbol: "Se",
+          name: "Selenium",
+          atomicNumber: 34,
+          atomicMass: 78.971,
+          oxidationStates: "+6, +4, -2",
+          electronConfig: "[Ar] 3d¹⁰ 4s² 4p⁴",
+          group: "Nonmetal",
+          period: 4,
+          class: "nonmetal",
+          gridColumn: 16,
+          gridRow: 4,
+        },
+        {
+          symbol: "Br",
+          name: "Bromine",
+          atomicNumber: 35,
+          atomicMass: 79.904,
+          oxidationStates: "+7, +5, +1, -1",
+          electronConfig: "[Ar] 3d¹⁰ 4s² 4p⁵",
+          group: "Nonmetal",
+          period: 4,
+          class: "nonmetal",
+          gridColumn: 17,
+          gridRow: 4,
+        },
+        {
+          symbol: "Kr",
+          name: "Krypton",
+          atomicNumber: 36,
+          atomicMass: 83.798,
+          oxidationStates: "0",
+          electronConfig: "[Ar] 3d¹⁰ 4s² 4p⁶",
+          group: "Noble Gas",
+          period: 4,
+          class: "noble-gas",
+          gridColumn: 18,
+          gridRow: 4,
+        },
+        {
+          symbol: "Rb",
+          name: "Rubidium",
+          atomicNumber: 37,
+          atomicMass: 85.468,
+          oxidationStates: "+1",
+          electronConfig: "[Kr] 5s¹",
+          group: "Alkali Metal",
+          period: 5,
+          class: "alkali-metal",
+          gridColumn: 1,
+          gridRow: 5,
+        },
+        {
+          symbol: "Sr",
+          name: "Strontium",
+          atomicNumber: 38,
+          atomicMass: 87.62,
+          oxidationStates: "+2",
+          electronConfig: "[Kr] 5s²",
+          group: "Alkaline Earth Metal",
+          period: 5,
+          class: "alkaline-earth-metal",
+          gridColumn: 2,
+          gridRow: 5,
+        },
+        {
+          symbol: "Y",
+          name: "Yttrium",
+          atomicNumber: 39,
+          atomicMass: 88.906,
+          oxidationStates: "+3",
+          electronConfig: "[Kr] 4d¹ 5s²",
+          group: "Transition Metal",
+          period: 5,
+          class: "transition-metal",
+          gridColumn: 3,
+          gridRow: 5,
+        },
+        {
+          symbol: "Zr",
+          name: "Zirconium",
+          atomicNumber: 40,
+          atomicMass: 91.224,
+          oxidationStates: "+4",
+          electronConfig: "[Kr] 4d² 5s²",
+          group: "Transition Metal",
+          period: 5,
+          class: "transition-metal",
+          gridColumn: 4,
+          gridRow: 5,
+        },
+        {
+          symbol: "Nb",
+          name: "Niobium",
+          atomicNumber: 41,
+          atomicMass: 92.906,
+          oxidationStates: "+5, +3",
+          electronConfig: "[Kr] 4d⁴ 5s¹",
+          group: "Transition Metal",
+          period: 5,
+          class: "transition-metal",
+          gridColumn: 5,
+          gridRow: 5,
+        },
+        {
+          symbol: "Mo",
+          name: "Molybdenum",
+          atomicNumber: 42,
+          atomicMass: 95.95,
+          oxidationStates: "+6, +4",
+          electronConfig: "[Kr] 4d⁵ 5s¹",
+          group: "Transition Metal",
+          period: 5,
+          class: "transition-metal",
+          gridColumn: 6,
+          gridRow: 5,
+        },
+        {
+          symbol: "Tc",
+          name: "Technetium",
+          atomicNumber: 43,
+          atomicMass: 98,
+          oxidationStates: "+7, +4",
+          electronConfig: "[Kr] 4d⁵ 5s²",
+          group: "Transition Metal",
+          period: 5,
+          class: "transition-metal",
+          gridColumn: 7,
+          gridRow: 5,
+        },
+        {
+          symbol: "Ru",
+          name: "Ruthenium",
+          atomicNumber: 44,
+          atomicMass: 101.07,
+          oxidationStates: "+3, +4, +8",
+          electronConfig: "[Kr] 4d⁷ 5s¹",
+          group: "Transition Metal",
+          period: 5,
+          class: "transition-metal",
+          gridColumn: 8,
+          gridRow: 5,
+        },
+        {
+          symbol: "Rh",
+          name: "Rhodium",
+          atomicNumber: 45,
+          atomicMass: 102.906,
+          oxidationStates: "+3",
+          electronConfig: "[Kr] 4d⁸ 5s¹",
+          group: "Transition Metal",
+          period: 5,
+          class: "transition-metal",
+          gridColumn: 9,
+          gridRow: 5,
+        },
+        {
+          symbol: "Pd",
+          name: "Palladium",
+          atomicNumber: 46,
+          atomicMass: 106.42,
+          oxidationStates: "+2, +4",
+          electronConfig: "[Kr] 4d¹⁰",
+          group: "Transition Metal",
+          period: 5,
+          class: "transition-metal",
+          gridColumn: 10,
+          gridRow: 5,
+        },
+        {
+          symbol: "Ag",
+          name: "Silver",
+          atomicNumber: 47,
+          atomicMass: 107.868,
+          oxidationStates: "+1",
+          electronConfig: "[Kr] 4d¹⁰ 5s¹",
+          group: "Transition Metal",
+          period: 5,
+          class: "transition-metal",
+          gridColumn: 11,
+          gridRow: 5,
+        },
+        {
+          symbol: "Cd",
+          name: "Cadmium",
+          atomicNumber: 48,
+          atomicMass: 112.414,
+          oxidationStates: "+2",
+          electronConfig: "[Kr] 4d¹⁰ 5s²",
+          group: "Transition Metal",
+          period: 5,
+          class: "transition-metal",
+          gridColumn: 12,
+          gridRow: 5,
+        },
+        {
+          symbol: "In",
+          name: "Indium",
+          atomicNumber: 49,
+          atomicMass: 114.818,
+          oxidationStates: "+3",
+          electronConfig: "[Kr] 4d¹⁰ 5s² 5p¹",
+          group: "Post-transition Metal",
+          period: 5,
+          class: "post-transition-metal",
+          gridColumn: 13,
+          gridRow: 5,
+        },
+        {
+          symbol: "Sn",
+          name: "Tin",
+          atomicNumber: 50,
+          atomicMass: 118.71,
+          oxidationStates: "+4, +2",
+          electronConfig: "[Kr] 4d¹⁰ 5s² 5p²",
+          group: "Post-transition Metal",
+          period: 5,
+          class: "post-transition-metal",
+          gridColumn: 14,
+          gridRow: 5,
+        },
+        {
+          symbol: "Sb",
+          name: "Antimony",
+          atomicNumber: 51,
+          atomicMass: 121.76,
+          oxidationStates: "+5, +3, -3",
+          electronConfig: "[Kr] 4d¹⁰ 5s² 5p³",
+          group: "Metalloid",
+          period: 5,
+          class: "metalloid",
+          gridColumn: 15,
+          gridRow: 5,
+        },
+        {
+          symbol: "Te",
+          name: "Tellurium",
+          atomicNumber: 52,
+          atomicMass: 127.6,
+          oxidationStates: "+6, +4, -2",
+          electronConfig: "[Kr] 4d¹⁰ 5s² 5p⁴",
+          group: "Metalloid",
+          period: 5,
+          class: "metalloid",
+          gridColumn: 16,
+          gridRow: 5,
+        },
+        {
+          symbol: "I",
+          name: "Iodine",
+          atomicNumber: 53,
+          atomicMass: 126.904,
+          oxidationStates: "+7, +5, +1, -1",
+          electronConfig: "[Kr] 4d¹⁰ 5s² 5p⁵",
+          group: "Nonmetal",
+          period: 5,
+          class: "nonmetal",
+          gridColumn: 17,
+          gridRow: 5,
+        },
+        {
+          symbol: "Xe",
+          name: "Xenon",
+          atomicNumber: 54,
+          atomicMass: 131.293,
+          oxidationStates: "+8, +6, +4, +2",
+          electronConfig: "[Kr] 4d¹⁰ 5s² 5p⁶",
+          group: "Noble Gas",
+          period: 5,
+          class: "noble-gas",
+          gridColumn: 18,
+          gridRow: 5,
+        },
+        {
+          symbol: "Cs",
+          name: "Cesium",
+          atomicNumber: 55,
+          atomicMass: 132.905,
+          oxidationStates: "+1",
+          electronConfig: "[Xe] 6s¹",
+          group: "Alkali Metal",
+          period: 6,
+          class: "alkali-metal",
+          gridColumn: 1,
+          gridRow: 6,
+        },
+        {
+          symbol: "Ba",
+          name: "Barium",
+          atomicNumber: 56,
+          atomicMass: 137.327,
+          oxidationStates: "+2",
+          electronConfig: "[Xe] 6s²",
+          group: "Alkaline Earth Metal",
+          period: 6,
+          class: "alkaline-earth-metal",
+          gridColumn: 2,
+          gridRow: 6,
+        },
+        {
+          symbol: "La",
+          name: "Lanthanum",
+          atomicNumber: 57,
+          atomicMass: 138.905,
+          oxidationStates: "+3",
+          electronConfig: "[Xe] 5d¹ 6s²",
+          group: "Lanthanide",
+          period: 6,
+          class: "lanthanide",
+          gridColumn: 3,
+          gridRow: 9,
+        },
+        {
+          symbol: "Ce",
+          name: "Cerium",
+          atomicNumber: 58,
+          atomicMass: 140.116,
+          oxidationStates: "+4, +3",
+          electronConfig: "[Xe] 4f¹ 5d¹ 6s²",
+          group: "Lanthanide",
+          period: 6,
+          class: "lanthanide",
+          gridColumn: 4,
+          gridRow: 9,
+        },
+        {
+          symbol: "Pr",
+          name: "Praseodymium",
+          atomicNumber: 59,
+          atomicMass: 140.908,
+          oxidationStates: "+3",
+          electronConfig: "[Xe] 4f³ 6s²",
+          group: "Lanthanide",
+          period: 6,
+          class: "lanthanide",
+          gridColumn: 5,
+          gridRow: 9,
+        },
+        {
+          symbol: "Nd",
+          name: "Neodymium",
+          atomicNumber: 60,
+          atomicMass: 144.242,
+          oxidationStates: "+3",
+          electronConfig: "[Xe] 4f⁴ 6s²",
+          group: "Lanthanide",
+          period: 6,
+          class: "lanthanide",
+          gridColumn: 6,
+          gridRow: 9,
+        },
+        {
+          symbol: "Pm",
+          name: "Promethium",
+          atomicNumber: 61,
+          atomicMass: 145,
+          oxidationStates: "+3",
+          electronConfig: "[Xe] 4f⁵ 6s²",
+          group: "Lanthanide",
+          period: 6,
+          class: "lanthanide",
+          gridColumn: 7,
+          gridRow: 9,
+        },
+        {
+          symbol: "Sm",
+          name: "Samarium",
+          atomicNumber: 62,
+          atomicMass: 150.36,
+          oxidationStates: "+3, +2",
+          electronConfig: "[Xe] 4f⁶ 6s²",
+          group: "Lanthanide",
+          period: 6,
+          class: "lanthanide",
+          gridColumn: 8,
+          gridRow: 9,
+        },
+        {
+          symbol: "Eu",
+          name: "Europium",
+          atomicNumber: 63,
+          atomicMass: 151.964,
+          oxidationStates: "+3, +2",
+          electronConfig: "[Xe] 4f⁷ 6s²",
+          group: "Lanthanide",
+          period: 6,
+          class: "lanthanide",
+          gridColumn: 9,
+          gridRow: 9,
+        },
+        {
+          symbol: "Gd",
+          name: "Gadolinium",
+          atomicNumber: 64,
+          atomicMass: 157.25,
+          oxidationStates: "+3",
+          electronConfig: "[Xe] 4f⁷ 5d¹ 6s²",
+          group: "Lanthanide",
+          period: 6,
+          class: "lanthanide",
+          gridColumn: 10,
+          gridRow: 9,
+        },
+        {
+          symbol: "Tb",
+          name: "Terbium",
+          atomicNumber: 65,
+          atomicMass: 158.925,
+          oxidationStates: "+3",
+          electronConfig: "[Xe] 4f⁹ 6s²",
+          group: "Lanthanide",
+          period: 6,
+          class: "lanthanide",
+          gridColumn: 11,
+          gridRow: 9,
+        },
+        {
+          symbol: "Dy",
+          name: "Dysprosium",
+          atomicNumber: 66,
+          atomicMass: 162.5,
+          oxidationStates: "+3",
+          electronConfig: "[Xe] 4f¹⁰ 6s²",
+          group: "Lanthanide",
+          period: 6,
+          class: "lanthanide",
+          gridColumn: 12,
+          gridRow: 9,
+        },
+        {
+          symbol: "Ho",
+          name: "Holmium",
+          atomicNumber: 67,
+          atomicMass: 164.93,
+          oxidationStates: "+3",
+          electronConfig: "[Xe] 4f¹¹ 6s²",
+          group: "Lanthanide",
+          period: 6,
+          class: "lanthanide",
+          gridColumn: 13,
+          gridRow: 9,
+        },
+        {
+          symbol: "Er",
+          name: "Erbium",
+          atomicNumber: 68,
+          atomicMass: 167.259,
+          oxidationStates: "+3",
+          electronConfig: "[Xe] 4f¹² 6s²",
+          group: "Lanthanide",
+          period: 6,
+          class: "lanthanide",
+          gridColumn: 14,
+          gridRow: 9,
+        },
+        {
+          symbol: "Tm",
+          name: "Thulium",
+          atomicNumber: 69,
+          atomicMass: 168.934,
+          oxidationStates: "+3",
+          electronConfig: "[Xe] 4f¹³ 6s²",
+          group: "Lanthanide",
+          period: 6,
+          class: "lanthanide",
+          gridColumn: 15,
+          gridRow: 9,
+        },
+        {
+          symbol: "Yb",
+          name: "Ytterbium",
+          atomicNumber: 70,
+          atomicMass: 173.045,
+          oxidationStates: "+3, +2",
+          electronConfig: "[Xe] 4f¹⁴ 6s²",
+          group: "Lanthanide",
+          period: 6,
+          class: "lanthanide",
+          gridColumn: 16,
+          gridRow: 9,
+        },
+        {
+          symbol: "Lu",
+          name: "Lutetium",
+          atomicNumber: 71,
+          atomicMass: 174.967,
+          oxidationStates: "+3",
+          electronConfig: "[Xe] 4f¹⁴ 5d¹ 6s²",
+          group: "Lanthanide",
+          period: 6,
+          class: "lanthanide",
+          gridColumn: 17,
+          gridRow: 9,
+        },
+        {
+          symbol: "Hf",
+          name: "Hafnium",
+          atomicNumber: 72,
+          atomicMass: 178.49,
+          oxidationStates: "+4",
+          electronConfig: "[Xe] 4f¹⁴ 5d² 6s²",
+          group: "Transition Metal",
+          period: 6,
+          class: "transition-metal",
+          gridColumn: 4,
+          gridRow: 6,
+        },
+        {
+          symbol: "Ta",
+          name: "Tantalum",
+          atomicNumber: 73,
+          atomicMass: 180.948,
+          oxidationStates: "+5",
+          electronConfig: "[Xe] 4f¹⁴ 5d³ 6s²",
+          group: "Transition Metal",
+          period: 6,
+          class: "transition-metal",
+          gridColumn: 5,
+          gridRow: 6,
+        },
+        {
+          symbol: "W",
+          name: "Tungsten",
+          atomicNumber: 74,
+          atomicMass: 183.84,
+          oxidationStates: "+6",
+          electronConfig: "[Xe] 4f¹⁴ 5d⁴ 6s²",
+          group: "Transition Metal",
+          period: 6,
+          class: "transition-metal",
+          gridColumn: 6,
+          gridRow: 6,
+        },
+        {
+          symbol: "Re",
+          name: "Rhenium",
+          atomicNumber: 75,
+          atomicMass: 186.207,
+          oxidationStates: "+7, +4",
+          electronConfig: "[Xe] 4f¹⁴ 5d⁵ 6s²",
+          group: "Transition Metal",
+          period: 6,
+          class: "transition-metal",
+          gridColumn: 7,
+          gridRow: 6,
+        },
+        {
+          symbol: "Os",
+          name: "Osmium",
+          atomicNumber: 76,
+          atomicMass: 190.23,
+          oxidationStates: "+4, +3",
+          electronConfig: "[Xe] 4f¹⁴ 5d⁶ 6s²",
+          group: "Transition Metal",
+          period: 6,
+          class: "transition-metal",
+          gridColumn: 8,
+          gridRow: 6,
+        },
+        {
+          symbol: "Ir",
+          name: "Iridium",
+          atomicNumber: 77,
+          atomicMass: 192.217,
+          oxidationStates: "+4, +3",
+          electronConfig: "[Xe] 4f¹⁴ 5d⁷ 6s²",
+          group: "Transition Metal",
+          period: 6,
+          class: "transition-metal",
+          gridColumn: 9,
+          gridRow: 6,
+        },
+        {
+          symbol: "Pt",
+          name: "Platinum",
+          atomicNumber: 78,
+          atomicMass: 195.084,
+          oxidationStates: "+4, +2",
+          electronConfig: "[Xe] 4f¹⁴ 5d⁹ 6s¹",
+          group: "Transition Metal",
+          period: 6,
+          class: "transition-metal",
+          gridColumn: 10,
+          gridRow: 6,
+        },
+        {
+          symbol: "Au",
+          name: "Gold",
+          atomicNumber: 79,
+          atomicMass: 196.967,
+          oxidationStates: "+3, +1",
+          electronConfig: "[Xe] 4f¹⁴ 5d¹⁰ 6s¹",
+          group: "Transition Metal",
+          period: 6,
+          class: "transition-metal",
+          gridColumn: 11,
+          gridRow: 6,
+        },
+        {
+          symbol: "Hg",
+          name: "Mercury",
+          atomicNumber: 80,
+          atomicMass: 200.592,
+          oxidationStates: "+2, +1",
+          electronConfig: "[Xe] 4f¹⁴ 5d¹⁰ 6s²",
+          group: "Transition Metal",
+          period: 6,
+          class: "transition-metal",
+          gridColumn: 12,
+          gridRow: 6,
+        },
+        {
+          symbol: "Tl",
+          name: "Thallium",
+          atomicNumber: 81,
+          atomicMass: 204.38,
+          oxidationStates: "+3, +1",
+          electronConfig: "[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p¹",
+          group: "Post-transition Metal",
+          period: 6,
+          class: "post-transition-metal",
+          gridColumn: 13,
+          gridRow: 6,
+        },
+        {
+          symbol: "Pb",
+          name: "Lead",
+          atomicNumber: 82,
+          atomicMass: 207.2,
+          oxidationStates: "+4, +2",
+          electronConfig: "[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p²",
+          group: "Post-transition Metal",
+          period: 6,
+          class: "post-transition-metal",
+          gridColumn: 14,
+          gridRow: 6,
+        },
+        {
+          symbol: "Bi",
+          name: "Bismuth",
+          atomicNumber: 83,
+          atomicMass: 208.98,
+          oxidationStates: "+5, +3",
+          electronConfig: "[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p³",
+          group: "Post-transition Metal",
+          period: 6,
+          class: "post-transition-metal",
+          gridColumn: 15,
+          gridRow: 6,
+        },
+        {
+          symbol: "Po",
+          name: "Polonium",
+          atomicNumber: 84,
+          atomicMass: 209,
+          oxidationStates: "+4, +2",
+          electronConfig: "[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p⁴",
+          group: "Post-transition Metal",
+          period: 6,
+          class: "post-transition-metal",
+          gridColumn: 16,
+          gridRow: 6,
+        },
+        {
+          symbol: "At",
+          name: "Astatine",
+          atomicNumber: 85,
+          atomicMass: 210,
+          oxidationStates: "+7, +5, +3, -1",
+          electronConfig: "[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p⁵",
+          group: "Metalloid",
+          period: 6,
+          class: "metalloid",
+          gridColumn: 17,
+          gridRow: 6,
+        },
+        {
+          symbol: "Rn",
+          name: "Radon",
+          atomicNumber: 86,
+          atomicMass: 222,
+          oxidationStates: "0",
+          electronConfig: "[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p⁶",
+          group: "Noble Gas",
+          period: 6,
+          class: "noble-gas",
+          gridColumn: 18,
+          gridRow: 6,
+        },
+        {
+          symbol: "Fr",
+          name: "Francium",
+          atomicNumber: 87,
+          atomicMass: 223,
+          oxidationStates: "+1",
+          electronConfig: "[Rn] 7s¹",
+          group: "Alkali Metal",
+          period: 7,
+          class: "alkali-metal",
+          gridColumn: 1,
+          gridRow: 7,
+        },
+        {
+          symbol: "Ra",
+          name: "Radium",
+          atomicNumber: 88,
+          atomicMass: 226,
+          oxidationStates: "+2",
+          electronConfig: "[Rn] 7s²",
+          group: "Alkaline Earth Metal",
+          period: 7,
+          class: "alkaline-earth-metal",
+          gridColumn: 2,
+          gridRow: 7,
+        },
+        {
+          symbol: "Ac",
+          name: "Actinium",
+          atomicNumber: 89,
+          atomicMass: 227,
+          oxidationStates: "+3",
+          electronConfig: "[Rn] 6d¹ 7s²",
+          group: "Actinide",
+          period: 7,
+          class: "actinide",
+          gridColumn: 3,
+          gridRow: 10,
+        },
+        {
+          symbol: "Th",
+          name: "Thorium",
+          atomicNumber: 90,
+          atomicMass: 232.038,
+          oxidationStates: "+4",
+          electronConfig: "[Rn] 6d² 7s²",
+          group: "Actinide",
+          period: 7,
+          class: "actinide",
+          gridColumn: 4,
+          gridRow: 10,
+        },
+        {
+          symbol: "Pa",
+          name: "Protactinium",
+          atomicNumber: 91,
+          atomicMass: 231.036,
+          oxidationStates: "+5, +4",
+          electronConfig: "[Rn] 5f² 6d¹ 7s²",
+          group: "Actinide",
+          period: 7,
+          class: "actinide",
+          gridColumn: 5,
+          gridRow: 10,
+        },
+        {
+          symbol: "U",
+          name: "Uranium",
+          atomicNumber: 92,
+          atomicMass: 238.029,
+          oxidationStates: "+6, +5, +4, +3",
+          electronConfig: "[Rn] 5f³ 6d¹ 7s²",
+          group: "Actinide",
+          period: 7,
+          class: "actinide",
+          gridColumn: 6,
+          gridRow: 10,
+        },
+        {
+          symbol: "Np",
+          name: "Neptunium",
+          atomicNumber: 93,
+          atomicMass: 237,
+          oxidationStates: "+6, +5, +4, +3",
+          electronConfig: "[Rn] 5f⁴ 6d¹ 7s²",
+          group: "Actinide",
+          period: 7,
+          class: "actinide",
+          gridColumn: 7,
+          gridRow: 10,
+        },
+        {
+          symbol: "Pu",
+          name: "Plutonium",
+          atomicNumber: 94,
+          atomicMass: 244,
+          oxidationStates: "+6, +5, +4, +3",
+          electronConfig: "[Rn] 5f⁶ 7s²",
+          group: "Actinide",
+          period: 7,
+          class: "actinide",
+          gridColumn: 8,
+          gridRow: 10,
+        },
+        {
+          symbol: "Am",
+          name: "Americium",
+          atomicNumber: 95,
+          atomicMass: 243,
+          oxidationStates: "+6, +5, +4, +3",
+          electronConfig: "[Rn] 5f⁷ 7s²",
+          group: "Actinide",
+          period: 7,
+          class: "actinide",
+          gridColumn: 9,
+          gridRow: 10,
+        },
+        {
+          symbol: "Cm",
+          name: "Curium",
+          atomicNumber: 96,
+          atomicMass: 247,
+          oxidationStates: "+3",
+          electronConfig: "[Rn] 5f⁷ 6d¹ 7s²",
+          group: "Actinide",
+          period: 7,
+          class: "actinide",
+          gridColumn: 10,
+          gridRow: 10,
+        },
+        {
+          symbol: "Bk",
+          name: "Berkelium",
+          atomicNumber: 97,
+          atomicMass: 247,
+          oxidationStates: "+4, +3",
+          electronConfig: "[Rn] 5f⁹ 7s²",
+          group: "Actinide",
+          period: 7,
+          class: "actinide",
+          gridColumn: 11,
+          gridRow: 10,
+        },
+        {
+          symbol: "Cf",
+          name: "Californium",
+          atomicNumber: 98,
+          atomicMass: 251,
+          oxidationStates: "+3",
+          electronConfig: "[Rn] 5f¹⁰ 7s²",
+          group: "Actinide",
+          period: 7,
+          class: "actinide",
+          gridColumn: 12,
+          gridRow: 10,
+        },
+        {
+          symbol: "Es",
+          name: "Einsteinium",
+          atomicNumber: 99,
+          atomicMass: 252,
+          oxidationStates: "+3",
+          electronConfig: "[Rn] 5f¹¹ 7s²",
+          group: "Actinide",
+          period: 7,
+          class: "actinide",
+          gridColumn: 13,
+          gridRow: 10,
+        },
+        {
+          symbol: "Fm",
+          name: "Fermium",
+          atomicNumber: 100,
+          atomicMass: 257,
+          oxidationStates: "+3",
+          electronConfig: "[Rn] 5f¹² 7s²",
+          group: "Actinide",
+          period: 7,
+          class: "actinide",
+          gridColumn: 14,
+          gridRow: 10,
+        },
+        {
+          symbol: "Md",
+          name: "Mendelevium",
+          atomicNumber: 101,
+          atomicMass: 258,
+          oxidationStates: "+3, +2",
+          electronConfig: "[Rn] 5f¹³ 7s²",
+          group: "Actinide",
+          period: 7,
+          class: "actinide",
+          gridColumn: 15,
+          gridRow: 10,
+        },
+        {
+          symbol: "No",
+          name: "Nobelium",
+          atomicNumber: 102,
+          atomicMass: 259,
+          oxidationStates: "+3, +2",
+          electronConfig: "[Rn] 5f¹⁴ 7s²",
+          group: "Actinide",
+          period: 7,
+          class: "actinide",
+          gridColumn: 16,
+          gridRow: 10,
+        },
+        {
+          symbol: "Lr",
+          name: "Lawrencium",
+          atomicNumber: 103,
+          atomicMass: 266,
+          oxidationStates: "+3",
+          electronConfig: "[Rn] 5f¹⁴ 7s² 7p¹",
+          group: "Actinide",
+          period: 7,
+          class: "actinide",
+          gridColumn: 17,
+          gridRow: 10,
+        },
+        {
+          symbol: "Rf",
+          name: "Rutherfordium",
+          atomicNumber: 104,
+          atomicMass: 267,
+          oxidationStates: "+4",
+          electronConfig: "[Rn] 5f¹⁴ 6d² 7s²",
+          group: "Transition Metal",
+          period: 7,
+          class: "transition-metal",
+          gridColumn: 4,
+          gridRow: 7,
+        },
+        {
+          symbol: "Db",
+          name: "Dubnium",
+          atomicNumber: 105,
+          atomicMass: 268,
+          oxidationStates: "+5",
+          electronConfig: "[Rn] 5f¹⁴ 6d³ 7s²",
+          group: "Transition Metal",
+          period: 7,
+          class: "transition-metal",
+          gridColumn: 5,
+          gridRow: 7,
+        },
+        {
+          symbol: "Sg",
+          name: "Seaborgium",
+          atomicNumber: 106,
+          atomicMass: 269,
+          oxidationStates: "+6",
+          electronConfig: "[Rn] 5f¹⁴ 6d⁴ 7s²",
+          group: "Transition Metal",
+          period: 7,
+          class: "transition-metal",
+          gridColumn: 6,
+          gridRow: 7,
+        },
+        {
+          symbol: "Bh",
+          name: "Bohrium",
+          atomicNumber: 107,
+          atomicMass: 270,
+          oxidationStates: "+7",
+          electronConfig: "[Rn] 5f¹⁴ 6d⁵ 7s²",
+          group: "Transition Metal",
+          period: 7,
+          class: "transition-metal",
+          gridColumn: 7,
+          gridRow: 7,
+        },
+        {
+          symbol: "Hs",
+          name: "Hassium",
+          atomicNumber: 108,
+          atomicMass: 269,
+          oxidationStates: "+8",
+          electronConfig: "[Rn] 5f¹⁴ 6d⁶ 7s²",
+          group: "Transition Metal",
+          period: 7,
+          class: "transition-metal",
+          gridColumn: 8,
+          gridRow: 7,
+        },
+        {
+          symbol: "Mt",
+          name: "Meitnerium",
+          atomicNumber: 109,
+          atomicMass: 278,
+          oxidationStates: "+6",
+          electronConfig: "[Rn] 5f¹⁴ 6d⁷ 7s²",
+          group: "Transition Metal",
+          period: 7,
+          class: "transition-metal",
+          gridColumn: 9,
+          gridRow: 7,
+        },
+        {
+          symbol: "Ds",
+          name: "Darmstadtium",
+          atomicNumber: 110,
+          atomicMass: 281,
+          oxidationStates: "+6",
+          electronConfig: "[Rn] 5f¹⁴ 6d⁸ 7s²",
+          group: "Transition Metal",
+          period: 7,
+          class: "transition-metal",
+          gridColumn: 10,
+          gridRow: 7,
+        },
+        {
+          symbol: "Rg",
+          name: "Roentgenium",
+          atomicNumber: 111,
+          atomicMass: 282,
+          oxidationStates: "+5",
+          electronConfig: "[Rn] 5f¹⁴ 6d⁹ 7s²",
+          group: "Transition Metal",
+          period: 7,
+          class: "transition-metal",
+          gridColumn: 11,
+          gridRow: 7,
+        },
+        {
+          symbol: "Cn",
+          name: "Copernicium",
+          atomicNumber: 112,
+          atomicMass: 285,
+          oxidationStates: "+2",
+          electronConfig: "[Rn] 5f¹⁴ 6d¹⁰ 7s²",
+          group: "Transition Metal",
+          period: 7,
+          class: "transition-metal",
+          gridColumn: 12,
+          gridRow: 7,
+        },
+        {
+          symbol: "Nh",
+          name: "Nihonium",
+          atomicNumber: 113,
+          atomicMass: 286,
+          oxidationStates: "+1",
+          electronConfig: "[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p¹",
+          group: "Post-transition Metal",
+          period: 7,
+          class: "post-transition-metal",
+          gridColumn: 13,
+          gridRow: 7,
+        },
+        {
+          symbol: "Fl",
+          name: "Flerovium",
+          atomicNumber: 114,
+          atomicMass: 289,
+          oxidationStates: "+2",
+          electronConfig: "[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p²",
+          group: "Post-transition Metal",
+          period: 7,
+          class: "post-transition-metal",
+          gridColumn: 14,
+          gridRow: 7,
+        },
+        {
+          symbol: "Mc",
+          name: "Moscovium",
+          atomicNumber: 115,
+          atomicMass: 290,
+          oxidationStates: "+3",
+          electronConfig: "[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p³",
+          group: "Post-transition Metal",
+          period: 7,
+          class: "post-transition-metal",
+          gridColumn: 15,
+          gridRow: 7,
+        },
+        {
+          symbol: "Lv",
+          name: "Livermorium",
+          atomicNumber: 116,
+          atomicMass: 293,
+          oxidationStates: "+2",
+          electronConfig: "[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p⁴",
+          group: "Post-transition Metal",
+          period: 7,
+          class: "post-transition-metal",
+          gridColumn: 16,
+          gridRow: 7,
+        },
+        {
+          symbol: "Ts",
+          name: "Tennessine",
+          atomicNumber: 117,
+          atomicMass: 294,
+          oxidationStates: "-1",
+          electronConfig: "[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p⁵",
+          group: "Post-transition Metal",
+          period: 7,
+          class: "post-transition-metal",
+          gridColumn: 17,
+          gridRow: 7,
+        },
+        {
+          symbol: "Og",
+          name: "Oganesson",
+          atomicNumber: 118,
+          atomicMass: 294,
+          oxidationStates: "0",
+          electronConfig: "[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p⁶",
+          group: "Noble Gas",
+          period: 7,
+          class: "noble-gas",
+          gridColumn: 18,
+          gridRow: 7,
+        },
+      ];
+
+      let scene, camera, renderer;
+
+      function parseElectronConfig(config) {
+        const shells = [];
+        const regex = /(\d)([spdf])(?:�|¹|²|³|⁴|⁵|⁶|⁷|⁸|⁹|¹⁰)/g;
+        let match;
+        while ((match = regex.exec(config)) !== null) {
+          const shell = match[1];
+          const orbital = match[2];
+          const electrons = parseInt(match[0].slice(3) || "1", 10);
+          shells.push({ shell, orbital, electrons });
+        }
+        return shells;
+      }
+
+      function init3DModel(atomicNumber, electronConfig) {
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera(
+          75,
+          modelContainer.clientWidth / modelContainer.clientHeight,
+          0.1,
+          1000
+        );
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(
+          modelContainer.clientWidth,
+          modelContainer.clientHeight
+        );
+        modelContainer.innerHTML = "";
+        modelContainer.appendChild(renderer.domElement);
+
+        const nucleusGeometry = new THREE.SphereGeometry(0.5, 32, 32);
+        const nucleusMaterial = new THREE.MeshPhongMaterial({
+          color: 0xff0000,
+        });
+        const nucleus = new THREE.Mesh(nucleusGeometry, nucleusMaterial);
+        scene.add(nucleus);
+
+        const shells = parseElectronConfig(electronConfig);
+        const electrons = [];
+        const orbits = [];
+        let currentElectronCount = 0;
+
+        shells.forEach((shell, index) => {
+          const radius = 1 + index * 0.8;
+          const maxElectrons =
+            shell.orbital === "s"
+              ? 2
+              : shell.orbital === "p"
+              ? 6
+              : shell.orbital === "d"
+              ? 10
+              : 14;
+          const electronCount = Math.min(shell.electrons, maxElectrons);
+
+          const orbitGeometry = new THREE.TorusGeometry(radius, 0.02, 8, 64);
+          const orbitMaterial = new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+            side: THREE.DoubleSide,
+          });
+          const orbit = new THREE.Mesh(orbitGeometry, orbitMaterial);
+          scene.add(orbit);
+
+          for (
+            let i = 0;
+            i < electronCount && currentElectronCount < atomicNumber;
+            i++
+          ) {
+            const electronGeometry = new THREE.SphereGeometry(0.15, 16, 16);
+            const electronMaterial = new THREE.MeshPhongMaterial({
+              color: 0x00ff00,
+            });
+            const electron = new THREE.Mesh(electronGeometry, electronMaterial);
+            scene.add(electron);
+            electrons.push({
+              mesh: electron,
+              radius,
+              angle: (i / electronCount) * Math.PI * 2,
+            });
+            currentElectronCount++;
+          }
+        });
+
+        const light = new THREE.PointLight(0xffffff, 1, 100);
+        light.position.set(5, 5, 5);
+        scene.add(light);
+        const ambientLight = new THREE.AmbientLight(0x404040);
+        scene.add(ambientLight);
+
+        camera.position.z = 5 + shells.length * 0.5;
+
+        function animate() {
+          requestAnimationFrame(animate);
+          nucleus.rotation.y += 0.01;
+          electrons.forEach((electron, i) => {
+            const speed = 0.001 * (electrons.length - (i % shells.length) + 1);
+            electron.angle += speed;
+            electron.mesh.position.set(
+              Math.cos(electron.angle) * electron.radius,
+              Math.sin(electron.angle) * electron.radius,
+              0
+            );
+          });
+          orbits.forEach((orbit) => {
+            orbit.rotation.y += 0.005;
+          });
+          renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener("resize", () => {
+          camera.aspect =
+            modelContainer.clientWidth / modelContainer.clientHeight;
+          camera.updateProjectionMatrix();
+          renderer.setSize(
+            modelContainer.clientWidth,
+            modelContainer.clientHeight
+          );
+        });
+      }
+
+      function populatePeriodicTable() {
+        elements.forEach((element) => {
+          const div = document.createElement("div");
+          div.className = `element ${element.class}`;
+          div.style.gridColumn = element.gridColumn;
+          div.style.gridRow = element.gridRow;
+          div.innerHTML = `
+      <span class="atomic-number">${element.atomicNumber}</span>
+      <span class="symbol">${element.symbol}</span>
+      <span class="name">${element.name}</span>
+    `;
+          div.addEventListener("click", () => showElementDetails(element));
+          periodicTable.appendChild(div);
+        });
+      }
+
+      function showElementDetails(element) {
+        elementDetails.name.textContent = element.name;
+        elementDetails.atomicNumber.textContent = element.atomicNumber;
+        elementDetails.atomicMass.textContent = element.atomicMass;
+        elementDetails.oxidationStates.textContent = element.oxidationStates;
+        elementDetails.electronConfig.textContent = element.electronConfig;
+        elementDetails.group.textContent = element.group;
+        elementDetails.period.textContent = element.period;
+        sidePanel.classList.add("active");
+        init3DModel(element.atomicNumber, element.electronConfig);
+      }
+
+      closeBtn.addEventListener("click", () => {
+        sidePanel.classList.remove("active");
+      });
+
+      document.addEventListener("DOMContentLoaded", () => {
+        populatePeriodicTable();
+      });
+    </script>
+  </body>
+</html>
